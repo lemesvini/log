@@ -58,7 +58,7 @@ export default function Dashboard() {
       <div className="h-screen w-full font-mono">
         <Header setNewIssueModalOpen={setNewIssueModalOpen} />
         <div className="w-full flex items-center justify-center mt-6">
-          <div className="flex flex-row text-[#8098A1] w-full max-w-[800px] justify-between">
+          <div className="flex flex-row text-[#8098A1] w-[90%] max-w-[800px] justify-between">
             <span>Welcome, {user?.displayName}</span>
             <select
               className="h-full bg-[#0D1117] text-[#8098A1] text-center p-1"
