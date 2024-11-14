@@ -12,10 +12,8 @@ export default function Home() {
     try {
       const result = await signInWithPopup(auth, provider); // Await the result of signInWithPopup
       // You can access the logged-in user information here
-      console.log(result.user); // Access user information from result
-      if (user){
-        router.push('/dashboard')
-      }
+      router.push('/dashboard')
+        
     } catch (error) {
       console.error("Error during Google login:", error);
     }
