@@ -82,6 +82,7 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue }) => {
                 className="w-full grow bg-black text-white border border-gray-600 p-2 mt-2"
                 style={{ resize: "none" }}
                 placeholder="Enter your log here..."
+                spellCheck
               ></textarea>
             </div>
           </>
