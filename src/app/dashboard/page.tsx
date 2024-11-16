@@ -30,7 +30,11 @@ export default function Dashboard() {
   const fetchIssues = async () => {
     try {
       const issuesRef = collection(db, "issues");
-      const q = query(issuesRef, where("vault", "==", selectedVault));
+      const q = query(
+        issuesRef,
+        where("vault", "==", selectedVault),
+        where("userId", "==", user?.uid)
+      );
       const querySnapshot = await getDocs(q);
       const fetchedIssues: any[] = [];
       querySnapshot.forEach((doc) => {

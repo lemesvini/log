@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { db } from "../app/firebase"; // Import the Firestore instance
+import { db, auth } from "../app/firebase"; // Import the Firestore instance
 import { collection, addDoc } from "firebase/firestore"; // Firestore functions to add data
 
 export default function NewIssueModal({ setNewIssueModalOpen, onIssueAdded  }: any) {
@@ -11,9 +11,15 @@ export default function NewIssueModal({ setNewIssueModalOpen, onIssueAdded  }: a
   const [badge, setBadge] = useState("log");
   const [vault, setVault] = useState("Personal");
   const [log, setLog] = useState("");
+  const user = auth.currentUser;
 
   // Save data to Firestore
   const handleSaveNewLog = async () => {
+    if (!user) {
+      alert("You must be logged in to save an issue.");
+      return;
+    }
+  
     const issueData = {
       newIssueName,
       description,
@@ -22,18 +28,19 @@ export default function NewIssueModal({ setNewIssueModalOpen, onIssueAdded  }: a
       vault,
       log,
       createdAt: new Date().toISOString(),
+      userId: user.uid, // Include the user's UID
     };
-
+  
     try {
-      // Ensure that you pass the Firestore instance and the correct collection name
+      // Save the data to Firestore
       await addDoc(collection(db, "issues"), issueData);
       console.log("Issue saved to Firestore");
-      alert("item issued successfully!")
+      alert("Item issued successfully!");
       setNewIssueModalOpen(false); // Close modal after saving
+      onIssueAdded(); // Notify parent component about the new issue
     } catch (error) {
       console.error("Error saving to Firestore", error);
     }
-    onIssueAdded(); 
   };
 
   // Handle closing the modal when clicking outside the content
