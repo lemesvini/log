@@ -19,10 +19,6 @@ export default function Dashboard() {
   const user = auth.currentUser;
   const router = useRouter();
 
-  if(!user) {
-    router.push('/')
-  }
-
   const openDrawer = (issueData: any) => {
     setSelectedIssue(issueData);
     setDrawerOpen(true);
@@ -56,6 +52,10 @@ export default function Dashboard() {
   useEffect(() => {
     fetchIssues();
   }, [selectedVault]);
+
+  if(!user) {
+    router.push('/')
+  }
 
   return (
     <>
