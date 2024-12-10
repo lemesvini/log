@@ -53,10 +53,6 @@ export default function Dashboard() {
     fetchIssues();
   }, [selectedVault]);
 
-  if(!user) {
-    router.push('/')
-  }
-
   return (
     <>
       {newIssueModalOpen && (
