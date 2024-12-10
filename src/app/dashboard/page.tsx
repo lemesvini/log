@@ -8,6 +8,7 @@ import NewIssueModal from "@/components/NewIssueModal";
 import { db } from "../firebase";
 import { collection, getDocs, query, where } from "firebase/firestore";
 import { auth } from "../firebase";
+import { useRouter } from "next/navigation";
 
 export default function Dashboard() {
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -16,6 +17,11 @@ export default function Dashboard() {
   const [issues, setIssues] = useState<any[]>([]);
   const [selectedVault, setSelectedVault] = useState("Work"); // Store selected vault filter
   const user = auth.currentUser;
+  const router = useRouter();
+
+  if(!user) {
+    router.push('/')
+  }
 
   const openDrawer = (issueData: any) => {
     setSelectedIssue(issueData);
