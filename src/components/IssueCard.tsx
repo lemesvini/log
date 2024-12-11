@@ -6,9 +6,30 @@ interface IssueCardProps {
     createdAt: string; // You can adjust this type if using a different date format
     vault: string;
     badge: string;
+    timestamp: string;
   };
 }
+const formatDate = (timestamp: any) => {
+  let date;
+  if (timestamp?.toDate) {
+    // Firestore timestamp
+    date = timestamp.toDate();
+  } else if (typeof timestamp === 'string') {
+    // ISO string
+    date = new Date(timestamp);
+  } else {
+    // Fallback
+    date = new Date();
+  }
 
+  return date.toLocaleDateString('en-US', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
 export default function IssueCard({ issue }: IssueCardProps) {
   return (
     <div className="bg-black w-[90%] max-w-[800px] min-h-[100px] p-4 text-white cursor-pointer">
@@ -42,7 +63,7 @@ export default function IssueCard({ issue }: IssueCardProps) {
       </div>
       <div className="mt-3 w-full flex justify-between text-[#8098A1]">
         <span>{issue.vault} vault </span>
-        <span>created at: {new Date(issue.createdAt).toLocaleString()}</span>
+        <span>created at: {formatDate(issue.timestamp || issue.createdAt)}</span>
       </div>
     </div>
   );

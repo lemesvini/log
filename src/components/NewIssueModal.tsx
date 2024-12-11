@@ -1,10 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { db, auth } from "../app/firebase"; // Import the Firestore instance
-import { collection, addDoc } from "firebase/firestore"; // Firestore functions to add data
+import { db, auth } from "../app/firebase";
+import { collection, addDoc, serverTimestamp } from "firebase/firestore"; // Added serverTimestamp
 
-export default function NewIssueModal({ setNewIssueModalOpen, onIssueAdded  }: any) {
+export default function NewIssueModal({ setNewIssueModalOpen, onIssueAdded }: any) {
   const [newIssueName, setNewIssueName] = useState("");
   const [description, setDescription] = useState("");
   const [issueNumber, setIssueNumber] = useState("");
@@ -13,7 +13,6 @@ export default function NewIssueModal({ setNewIssueModalOpen, onIssueAdded  }: a
   const [log, setLog] = useState("");
   const user = auth.currentUser;
 
-  // Save data to Firestore
   const handleSaveNewLog = async () => {
     if (!user) {
       alert("You must be logged in to save an issue.");
@@ -23,27 +22,26 @@ export default function NewIssueModal({ setNewIssueModalOpen, onIssueAdded  }: a
     const issueData = {
       newIssueName,
       description,
-      issueNumber,
+      issueNumber: parseInt(issueNumber, 10) || 0, // Convert to number for proper sorting
       badge,
       vault,
       log,
-      createdAt: new Date().toISOString(),
-      userId: user.uid, // Include the user's UID
+      timestamp: new Date().toISOString(), // Use Firestore server timestamp
+      userId: user.uid,
     };
   
     try {
-      // Save the data to Firestore
       await addDoc(collection(db, "issues"), issueData);
       console.log("Issue saved to Firestore");
       alert("Item issued successfully!");
-      setNewIssueModalOpen(false); // Close modal after saving
-      onIssueAdded(); // Notify parent component about the new issue
+      setNewIssueModalOpen(false);
+      onIssueAdded();
     } catch (error) {
       console.error("Error saving to Firestore", error);
     }
   };
 
-  // Handle closing the modal when clicking outside the content
+  // Rest of the component remains the same...
   const handleCloseModal = (e: any) => {
     if (e && e.target === e.currentTarget) {
       setNewIssueModalOpen(false);
@@ -53,9 +51,9 @@ export default function NewIssueModal({ setNewIssueModalOpen, onIssueAdded  }: a
   return (
     <div
       className="fixed top-0 left-0 h-full w-full bg-gray-800 bg-opacity-50 flex items-center justify-center"
-      onClick={handleCloseModal} // Close modal when clicking the background
+      onClick={handleCloseModal}
     >
-      <div className="bg-black text-white w-[90%] max-w-[800px] h-[85%] p-8 flex flex-col font-mono">
+      <div className="bg-black text-white w-[60%] p-8 flex flex-col font-mono">
         <div>
           <div className="flex flex-row justify-center w-full items-center h-12 p-2">
             <h2 className="text-xs md:text-xl font-bold text-green-600 w-[20%]">
@@ -123,15 +121,6 @@ export default function NewIssueModal({ setNewIssueModalOpen, onIssueAdded  }: a
             </div>
           </div>
         </div>
-        <h2 className="mt-4">First Log:</h2>
-        <textarea
-          name="log"
-          id="log"
-          className="w-full grow bg-[#0D1117] p-2 mt-2"
-          style={{ resize: "none" }}
-          onChange={(e) => setLog(e.target.value)}
-          value={log}
-        ></textarea>
         <div className="w-full space-x-3 flex justify-end">
           <button
             onClick={handleCloseModal}
