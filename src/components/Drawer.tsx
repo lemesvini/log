@@ -183,12 +183,20 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue, onIssue
                   placeholder={isCodeMode ? "Enter your code here..." : "Enter your log here..."}
                   spellCheck={!isCodeMode}
                 />
+                <div className="flex flex-row justify-between items-center">
                 <button
                   onClick={saveLog}
-                  className="py-2 px-4 text-green-600 font-bold border border-green-600 hover:bg-green-500 hover:text-white"
+                  className="py-2 w-[49%] text-green-600 font-bold border border-green-600 hover:bg-green-500 hover:text-white"
                 >
                   Add Log Entry
                 </button>
+                <button
+                  onClick={deleteIssue}
+                   className="py-2 w-[49%] text-red-600 font-bold border border-red-600 hover:bg-red-500 hover:text-white"
+                >
+                  Delete Issue
+                </button>
+                </div>
               </div>
             )}
 
@@ -235,13 +243,6 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue, onIssue
         ) : (
           <p>No issue selected.</p>
         )}
-
-        <button
-          onClick={deleteIssue}
-          className="mt-4 py-2 px-4 text-red-600 font-bold border border-red-600 hover:bg-red-500 hover:text-white"
-        >
-          Delete Issue
-        </button>
       </div>
     </div>
   );
