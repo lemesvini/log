@@ -1,7 +1,9 @@
-import { FaX } from "react-icons/fa6";
+import { FaX, FaCode, FaFont } from "react-icons/fa6";
 import { useState, useEffect } from "react";
 import { db } from "../app/firebase";
 import { deleteDoc, doc, updateDoc, Timestamp, onSnapshot } from "firebase/firestore";
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { vscDarkPlus } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface DrawerProps {
   isOpen: boolean;
@@ -13,18 +15,36 @@ interface DrawerProps {
 interface LogEntry {
   text: string;
   timestamp: Date;
+  isCode: boolean;
+  language?: string;
+  filePath?: string;
 }
+
+const LANGUAGE_OPTIONS = [
+  { value: 'javascript', label: 'JavaScript' },
+  { value: 'typescript', label: 'TypeScript' },
+  { value: 'python', label: 'Python' },
+  { value: 'java', label: 'Java' },
+  { value: 'cpp', label: 'C++' },
+  { value: 'css', label: 'CSS' },
+  { value: 'html', label: 'HTML' },
+];
 
 const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue, onIssueUpdated }) => {
   const [newLog, setNewLog] = useState<string>("");
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [newEntry, setNewEntry] = useState(false);
+  const [isCodeMode, setIsCodeMode] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('javascript');
+  const [filePath, setFilePath] = useState<string>("");
 
-  const toggleNewEntry = () => {
-    setNewEntry((prev) => !prev);
+  const toggleNewEntry = () => setNewEntry((prev) => !prev);
+  const toggleCodeMode = () => {
+    setIsCodeMode((prev) => !prev);
+    // Reset file path when switching modes
+    setFilePath("");
   };
 
-  // Set up real-time listener for logs
   useEffect(() => {
     if (selectedIssue?.id) {
       const issueRef = doc(db, "issues", selectedIssue.id);
@@ -34,17 +54,18 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue, onIssue
           const issueData = doc.data();
           const existingLogs = issueData.logs || [];
           
-          // Convert Firestore timestamps to Date objects
           const convertedLogs = existingLogs.map((log: any) => ({
             text: log.text,
-            timestamp: log.timestamp?.toDate() || new Date()
+            timestamp: log.timestamp?.toDate() || new Date(),
+            isCode: log.isCode || false,
+            language: log.language || 'javascript',
+            filePath: log.filePath || ''
           }));
           
           setLogs(convertedLogs);
         }
       });
 
-      // Cleanup subscription
       return () => unsubscribe();
     }
   }, [selectedIssue?.id]);
@@ -55,23 +76,23 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue, onIssue
         const issueRef = doc(db, "issues", selectedIssue.id);
         const newLogEntry = {
           text: newLog.trim(),
-          timestamp: Timestamp.now()
+          timestamp: Timestamp.now(),
+          isCode: isCodeMode,
+          language: isCodeMode ? selectedLanguage : undefined,
+          filePath: isCodeMode ? filePath.trim() : undefined
         };
 
-        // Get current logs or initialize empty array
         const currentLogs = logs || [];
-        
-        // Update with new logs array
         await updateDoc(issueRef, {
           logs: [...currentLogs, newLogEntry]
         });
 
-        setNewLog(""); // Clear input
+        // Reset form fields
+        setNewLog("");
+        setFilePath("");
         if (onIssueUpdated) {
-          onIssueUpdated(); // Trigger parent refresh
+          onIssueUpdated();
         }
-        
-        console.log("Log saved successfully");
       } catch (error) {
         console.error("Error saving log:", error);
       }
@@ -85,9 +106,8 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue, onIssue
         await deleteDoc(issueRef);
         onClose();
         if (onIssueUpdated) {
-          onIssueUpdated(); // Trigger parent refresh
+          onIssueUpdated();
         }
-        console.log("Issue deleted successfully");
       } catch (error) {
         console.error("Error deleting issue:", error);
       }
@@ -118,33 +138,65 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue, onIssue
                 Issue #{selectedIssue.issueNumber}
               </div>
             </div>
-            <div  className="cursor-pointer margin-[2px]">
+            <div className="cursor-pointer margin-[2px]">
               <hr className="border-t border-gray-600 cursor-pointer hover:border-green-600 py-1" onClick={toggleNewEntry}/>
               <hr className="border border-black cursor-pointer"/>
             </div>           
-            {/* New Log Input */}
             {newEntry && (
               <div className="flex flex-col gap-2">
-              <h3 className="text-lg font-semibold">Add New Log:</h3>
-              <textarea
-                value={newLog}
-                onChange={(e) => setNewLog(e.target.value)}
-                className="w-full h-24 bg-black text-white border border-gray-600 p-2"
-                style={{ resize: "none" }}
-                placeholder="Enter your log here..."
-                spellCheck
-              />
-              <button
-                onClick={saveLog}
-                className="py-2 px-4 text-green-600 font-bold border border-green-600 hover:bg-green-500 hover:text-white"
-              >
-                Add Log Entry
-              </button>
-            </div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-lg font-semibold">Add New Log:</h3>
+                  <button
+                    onClick={toggleCodeMode}
+                    className={`p-2 rounded ${
+                      isCodeMode ? 'text-green-500' : 'text-gray-500'
+                    }`}
+                    title={isCodeMode ? "Switch to text mode" : "Switch to code mode"}
+                  >
+                    {isCodeMode ? <FaFont /> : <FaCode />}
+                  </button>
+                  {isCodeMode && (
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={selectedLanguage}
+                        onChange={(e) => setSelectedLanguage(e.target.value)}
+                        className="bg-[#0D1117] border border-gray-600 rounded p-1 text-sm"
+                      >
+                        {LANGUAGE_OPTIONS.map(option => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                      <input 
+                        type="text"
+                        value={filePath}
+                        onChange={(e) => setFilePath(e.target.value)}
+                        placeholder="File path (optional)"
+                        className="bg-[#0D1117] border border-gray-600 rounded p-1 text-sm w-64"
+                      />
+                    </div>
+                  )}
+                </div>
+                <textarea
+                  value={newLog}
+                  onChange={(e) => setNewLog(e.target.value)}
+                  className={`w-full h-24 bg-black text-white border border-gray-600 p-2 font-${
+                    isCodeMode ? 'mono' : 'sans'
+                  }`}
+                  style={{ resize: "none" }}
+                  placeholder={isCodeMode ? "Enter your code here..." : "Enter your log here..."}
+                  spellCheck={!isCodeMode}
+                />
+                <button
+                  onClick={saveLog}
+                  className="py-2 px-4 text-green-600 font-bold border border-green-600 hover:bg-green-500 hover:text-white"
+                >
+                  Add Log Entry
+                </button>
+              </div>
             )}
-            
 
-            {/* Log History */}
             <div className="flex-1 overflow-y-auto mt-4">
               <h3 className="text-lg font-semibold mb-2">Log History:</h3>
               <div className="flex flex-col gap-4">
@@ -153,10 +205,35 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue, onIssue
                     key={index} 
                     className="border-l border-green-600 bg-[#0D1117] p-4"
                   >
-                    <div className="text-sm text-green-600 mb-2">
-                      {log.timestamp.toLocaleString()}
+                    <div className="text-sm text-green-600 mb-2 flex items-center gap-2">
+                      <span>{log.timestamp.toLocaleString()}</span>
+                      {log.isCode && (
+                        <>
+                          <FaCode className="inline" />
+                          <span className="text-xs">
+                            {LANGUAGE_OPTIONS.find(opt => opt.value === log.language)?.label}
+                          </span>
+                          {log.filePath && (
+                            <span className="text-xs text-gray-400 ml-2">
+                              {log.filePath}
+                            </span>
+                          )}
+                        </>
+                      )}
                     </div>
-                    <div className="whitespace-pre-wrap">{log.text}</div>
+                    {log.isCode ? (
+                      <SyntaxHighlighter
+                        language={log.language}
+                        style={vscDarkPlus}
+                        customStyle={{ margin: 0, background: 'transparent' }}
+                      >
+                        {log.text}
+                      </SyntaxHighlighter>
+                    ) : (
+                      <div className="whitespace-pre-wrap font-sans">
+                        {log.text}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -166,7 +243,6 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue, onIssue
           <p>No issue selected.</p>
         )}
 
-        {/* Delete Button */}
         <button
           onClick={deleteIssue}
           className="mt-4 py-2 px-4 text-red-600 font-bold border border-red-600 hover:bg-red-500 hover:text-white"

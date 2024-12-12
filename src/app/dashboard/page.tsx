@@ -6,21 +6,39 @@ import IssueCard from "@/components/IssueCard";
 import Drawer from "@/components/Drawer";
 import NewIssueModal from "@/components/NewIssueModal";
 import { db } from "../firebase";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import { collection, getDocs, query, where, Timestamp } from "firebase/firestore";
 import { auth } from "../firebase";
 import { useRouter } from "next/navigation";
 
+interface Issue {
+  id: string;
+  newIssueName: string;
+  description: string;
+  issueNumber: number;
+  createdAt: string;
+  vault: string;
+  badge: string;
+  timestamp: string;
+  userId: string;
+  logs?: Array<{
+    text: string;
+    timestamp: Timestamp;
+    isCode?: boolean;
+    language?: string;
+  }>;
+}
+
 export default function Dashboard() {
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [selectedIssue, setSelectedIssue] = useState<any>(null);
+  const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [newIssueModalOpen, setNewIssueModalOpen] = useState(false);
-  const [issues, setIssues] = useState<any[]>([]);
+  const [issues, setIssues] = useState<Issue[]>([]);
   const [selectedVault, setSelectedVault] = useState("Work");
   const [sortByTimestamp, setSortByTimestamp] = useState(true);
   const user = auth.currentUser;
   const router = useRouter();
 
-  const openDrawer = (issueData: any) => {
+  const openDrawer = (issueData: Issue) => {
     setSelectedIssue(issueData);
     setDrawerOpen(true);
   };
@@ -29,73 +47,62 @@ export default function Dashboard() {
     setDrawerOpen(false);
   };
 
-  // Sort issues based on the current sorting criteria
-  // Sort issues based on the current sorting criteria
-const sortIssues = (issuesToSort: any[]) => {
-  return [...issuesToSort].sort((a, b) => {
-    if (sortByTimestamp) {
-      // Handle different timestamp formats
-      const getTimestamp = (timestamp: any) => {
-        if (timestamp?.toDate) {
-          // Firestore timestamp
-          return timestamp.toDate();
-        } else if (typeof timestamp === 'string') {
-          // ISO string
-          return new Date(timestamp);
-        } else if (timestamp instanceof Date) {
-          // Already a Date object
-          return timestamp;
-        }
-        // Fallback to current date if timestamp is invalid
-        return new Date();
-      };
+  const sortIssues = (issuesToSort: Issue[]) => {
+    return [...issuesToSort].sort((a, b) => {
+      if (sortByTimestamp) {
+        const getTimestamp = (timestamp: any) => {
+          if (timestamp?.toDate) {
+            return timestamp.toDate();
+          } else if (typeof timestamp === 'string') {
+            return new Date(timestamp);
+          } else if (timestamp instanceof Date) {
+            return timestamp;
+          }
+          return new Date();
+        };
 
-      const timeA = getTimestamp(a.timestamp || a.createdAt);
-      const timeB = getTimestamp(b.timestamp || b.createdAt);
-      return timeB.getTime() - timeA.getTime(); // Newest first
-    } else {
-      // Sort by issue number
-      return a.issueNumber - b.issueNumber;
-    }
-  });
-};
+        const timeA = getTimestamp(a.timestamp || a.createdAt);
+        const timeB = getTimestamp(b.timestamp || b.createdAt);
+        
+        return timeB.getTime() - timeA.getTime();
+      } else {
+        return a.issueNumber - b.issueNumber;
+      }
+    });
+  };
 
-  // Toggle sort method
   const toggleSort = () => {
     setSortByTimestamp((prev) => {
       const newSortByTimestamp = !prev;
-      // Immediately sort the issues when toggling
-      setIssues((currentIssues) => {
-        return sortIssues([...currentIssues]);
-      });
+      setIssues((currentIssues) => sortIssues([...currentIssues]));
       return newSortByTimestamp;
     });
   };
 
-  // Fetch issues from Firestore based on selected vault
   const fetchIssues = async () => {
+    if (!user?.uid) return;
+    
     try {
       const issuesRef = collection(db, "issues");
       const q = query(
         issuesRef,
         where("vault", "==", selectedVault),
-        where("userId", "==", user?.uid)
+        where("userId", "==", user.uid)
       );
       const querySnapshot = await getDocs(q);
-      const fetchedIssues: any[] = [];
+      const fetchedIssues: Issue[] = [];
       querySnapshot.forEach((doc) => {
-        fetchedIssues.push({ id: doc.id, ...doc.data() });
+        fetchedIssues.push({ id: doc.id, ...doc.data() } as Issue);
       });
-      setIssues(sortIssues(fetchedIssues)); // Sort issues before setting state
+      setIssues(sortIssues(fetchedIssues));
     } catch (error) {
       console.error("Error fetching issues:", error);
     }
   };
 
-  // Fetch issues whenever selectedVault changes
   useEffect(() => {
     fetchIssues();
-  }, [selectedVault, user?.uid]); // Added user?.uid as dependency
+  }, [selectedVault, user?.uid]);
 
   return (
     <>
