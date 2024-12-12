@@ -177,7 +177,7 @@ const Drawer: React.FC<DrawerProps> = ({ isOpen, onClose, selectedIssue, onIssue
                 <textarea
                   value={newLog}
                   onChange={(e) => setNewLog(e.target.value)}
-                  className={`w-full h-24 resize-y bg-black text-white border border-gray-600 p-2 font-${
+                  className={`w-full min-h-24 resize-y bg-black text-white border border-gray-600 p-2 font-${
                     isCodeMode ? 'mono' : 'sans'
                   }`}
                   placeholder={isCodeMode ? "Enter your code here..." : "Enter your log here..."}
